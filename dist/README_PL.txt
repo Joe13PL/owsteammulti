@@ -1,6 +1,12 @@
 OWSteamNet - multiplayer Original War przez Steam (bez otwierania portów, bez Radmina/Hamachi)
 =====================================================================================
 
+WYMAGANIA I OGRANICZENIA
+  - Tylko wersja Original War ze Steam. Wersje z GOG, z płyty i inne NIE BĘDĄ
+    DZIAŁAĆ (Steam wpuszcza tylko konta, które mają grę w bibliotece Steam).
+  - Tylko Windows. Na Linuksie (także Proton/Wine) mod NIE BĘDZIE DZIAŁAĆ.
+  - Klient Steam musi być uruchomiony i zalogowany.
+
 INSTALACJA (każdy gracz)
   Skopiuj wsock32.dll i OWSteamNet.ini do głównego katalogu gry
   (tam, gdzie jest OwarOGL.exe), np.:
