@@ -20,7 +20,10 @@ JAK GRAĆ
   Ręcznie: w polu adresu można wpisać SteamID64 hosta (17 cyfr, np. 7656119...),
           "steam:<SteamID64>" albo "@NazwaZnajomego".
 
-  Wszyscy gracze muszą mieć zainstalowany OWSteamNet. Zwykły LAN i gra przez
+  Wszyscy gracze muszą mieć zainstalowany OWSteamNet ORAZ tę samą wersję gry
+  (te same patche). Przy różnych wersjach gra odrzuci dołączenie - powód
+  odmowy (np. "different game/protocol version") jest w OWSteamNet.log.
+  Pierwsza linia logu podaje wersję moda - porównajcie ją między graczami. Zwykły LAN i gra przez
   IP działają dalej bez zmian.
 
 USTAWIENIA (OWSteamNet.ini)

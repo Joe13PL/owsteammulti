@@ -36,6 +36,8 @@
 
 #include "common.h"
 
+#define OWSTEAMNET_VERSION "0.1.1-pre"
+
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -724,6 +726,41 @@ static void EnsureWorker() {
 }
 
 // ---------------------------------------------------------------------------
+// Join diagnostics: the server answers a join request with packet type 5 and a
+// reason byte at offset 8 (0 = accepted); for reason 6 the server's mod folder
+// follows as a Pascal string.
+// ---------------------------------------------------------------------------
+static const char *JoinReason(uint8_t r) {
+    switch (r) {
+    case 1: return "server full";
+    case 2: return "wrong password";
+    case 3: return "game already started";
+    case 5: return "different game/protocol version";
+    case 6: return "different mod";
+    case 7: return "different mod version";
+    case 8: return "different mod files (mod CRC)";
+    case 9: return "different program CRC";
+    default: return "unknown reason";
+    }
+}
+
+static void CheckJoinReply(const uint8_t *p, int n, bool outgoing, uint32_t peerIp) {
+    if (n < 9 || p[7] != 5 || p[8] == 0) return;
+    char mod[64] = "";
+    if (p[8] == 6 && n > 10) {
+        int l = p[9] < 63 && 10 + p[9] <= n ? p[9] : 0;
+        memcpy(mod, p + 10, l);
+        mod[l] = 0;
+    }
+    in_addr a;
+    a.s_addr = peerIp;
+    if (outgoing)
+        Log("join refused for %s: %s (code %u)%s%s", inet_ntoa(a), JoinReason(p[8]), p[8], mod[0] ? ", our mod: " : "", mod);
+    else
+        Log("server %s refused join: %s (code %u)%s%s", inet_ntoa(a), JoinReason(p[8]), p[8], mod[0] ? ", server mod: " : "", mod);
+}
+
+// ---------------------------------------------------------------------------
 // Hooked wsock32 exports
 // ---------------------------------------------------------------------------
 extern "C" int WSAAPI hk_WSAStartup(WORD ver, LPWSADATA data) {
@@ -779,6 +816,7 @@ extern "C" int WSAAPI hk_sendto(SOCKET s, const char *buf, int len, int flags, c
         uint64_t id;
         if (LookupIp(a->sin_addr.s_addr, &id)) {
             TrackedPort(s, &srcPort);
+            CheckJoinReply((const uint8_t *)buf, len, true, a->sin_addr.s_addr);
             SteamSend(id, PKT_DATA, srcPort, ntohs(a->sin_port), buf, (uint32_t)len);
             return len;
         }
@@ -817,6 +855,7 @@ extern "C" int WSAAPI hk_recvfrom(SOCKET s, char *buf, int len, int flags, struc
         f.sin_port = h->port;
         payload += sizeof(InjHdr);
         n -= sizeof(InjHdr);
+        CheckJoinReply((const uint8_t *)payload, n, false, f.sin_addr.s_addr);
     }
     if (from && fromlen) {
         int c = *fromlen < (int)sizeof f ? *fromlen : (int)sizeof f;
@@ -882,7 +921,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         char *slash = strrchr(g_dir, '\\');
         if (slash) slash[1] = 0;
         LoadConfig();
-        Log("OWSteamNet loaded (enabled=%d lobby=%d)", cfg_enabled, cfg_lobbyType);
+        Log("OWSteamNet %s loaded (enabled=%d lobby=%d)", OWSTEAMNET_VERSION, cfg_enabled, cfg_lobbyType);
         char ini[MAX_PATH];
         sprintf(ini, "%sOWSteamNet.ini", g_dir);
         SyncFix_Apply(ini);

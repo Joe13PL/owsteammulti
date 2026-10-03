@@ -13,7 +13,9 @@ Multiplayer **Original War** przez Steam: hostowanie bez przekierowywania portó
    `C:\Program Files (x86)\Steam\steamapps\common\Original War\`
 3. Uruchamiaj grę normalnie ze Steama.
 
-Moda muszą mieć **wszyscy gracze**. Deinstalacja: usuń `wsock32.dll` (albo ustaw `Enabled=0` w ini).
+Moda muszą mieć **wszyscy gracze**, i to **tę samą wersję gry** (te same pliki/patche Original War). Przy różnych wersjach gra odrzuci dołączenie; od 0.1.1-pre powód odmowy jest zapisywany w `OWSteamNet.log`. Deinstalacja: usuń `wsock32.dll` (albo ustaw `Enabled=0` w ini).
+
+Poprawki desynców przetestowano na `OwarOGL_SGUI.exe` z wersji 3.0.16.370. Na innych wersjach poprawka, która nie znajdzie swojego miejsca w kodzie, sama się pomija i zapisuje to w logu.
 
 ## Jak grać
 
