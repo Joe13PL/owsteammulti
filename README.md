@@ -1,10 +1,8 @@
 # owsteammulti
 
-Multiplayer **Original War** przez Steam: hostowanie bez przekierowywania portów, bez Radmina/Hamachi, plus poprawki najczęstszych przyczyn desynców.
+Multiplayer **Original War** przez Steam: hostowanie bez przekierowywania portów i bez Radmina/Hamachi.
 
-> **Pre-release / wersja testowa.** Mechanizm był testowany automatycznie (testy poniżej), ale nie został jeszcze sprawdzony w pełnym meczu wieloosobowym. Zgłaszajcie wyniki w Issues, dołączając `OWSteamNet.log`.
-
-*English summary: a drop-in `wsock32.dll` proxy for Original War (Steam, OW Support build) that tunnels the game's UDP multiplayer over Steam P2P (NAT traversal + Steam relays) and applies in-memory desync fixes. The game executable is never modified.*
+*English summary: a drop-in `wsock32.dll` proxy for Original War (Steam version) that tunnels the game's UDP multiplayer over Steam P2P (NAT traversal + Steam relays). The game executable is never modified.*
 
 ## Instalacja
 
@@ -13,9 +11,9 @@ Multiplayer **Original War** przez Steam: hostowanie bez przekierowywania portó
    `C:\Program Files (x86)\Steam\steamapps\common\Original War\`
 3. Uruchamiaj grę normalnie ze Steama.
 
-Moda muszą mieć **wszyscy gracze**, i to **tę samą wersję gry** (te same pliki/patche Original War). Przy różnych wersjach gra odrzuci dołączenie; od 0.1.1-pre powód odmowy jest zapisywany w `OWSteamNet.log`. Deinstalacja: usuń `wsock32.dll` (albo ustaw `Enabled=0` w ini).
+Moda muszą mieć **wszyscy gracze**, i to przy **tej samej wersji gry** (te same pliki i patche Original War). Przy różnych wersjach gra odrzuci dołączenie, a powód odmowy trafi do `OWSteamNet.log`.
 
-Poprawki desynców przetestowano na `OwarOGL_SGUI.exe` z wersji 3.0.16.370. Na innych wersjach poprawka, która nie znajdzie swojego miejsca w kodzie, sama się pomija i zapisuje to w logu.
+Deinstalacja: usuń `wsock32.dll` albo ustaw `Enabled=0` w ini.
 
 ## Jak grać
 
@@ -25,29 +23,33 @@ Poprawki desynców przetestowano na `OwarOGL_SGUI.exe` z wersji 3.0.16.370. Na i
 
 Zwykły LAN i gra przez IP działają bez zmian.
 
+## Ustawienia (`OWSteamNet.ini`)
+
+| Opcja | Znaczenie |
+|---|---|
+| `Enabled` | `1` = gra przez Steam włączona, `0` = biblioteka całkowicie bierna |
+| `Lobby` | `public` / `friends` / `off`: jak hostowany serwer jest widoczny na Steam |
+| `DiscoverFriends` | serwery znajomych grających w OW na liście LAN |
+| `DiscoverLobbies` | serwery z publicznych lobby Steam na liście LAN |
+| `AcceptOnlyWhenHosting` | przychodzące połączenia Steam przyjmowane tylko podczas hostowania |
+| `FakeNetOctet` | pierwszy oktet wirtualnych adresów; zostaw `10`, bo gra traktuje 10.x jako LAN |
+| `Log` | dziennik w `OWSteamNet.log`; pierwsza linia podaje wersję moda |
+
+Zgłaszając problem w Issues, dołącz `OWSteamNet.log`. Log zawiera Twój SteamID, więc możesz go zamazać.
+
 ## Jak to działa
 
-### Sieć przez Steam
-Gra (Delphi) używa wyłącznie UDP przez `wsock32.dll`: serwer na porcie 27963, klienci na porcie losowym, wyszukiwanie w LAN przez broadcast na 27963, topologia gwiazdy. Pakiety mają do ~674 bajtów, a serwer identyfikuje graczy po adresie nadawcy.
+Gra używa wyłącznie UDP przez `wsock32.dll`:
+- serwer działa na porcie 27963, klienci na porcie losowym;
+- wyszukiwanie w LAN to broadcast na 27963;
+- topologia jest gwiazdą, pakiety mają do ok. 674 bajtów, a serwer rozpoznaje graczy po adresie nadawcy.
 
-`wsock32.dll` z tego projektu to pośrednik systemowej biblioteki: 66 funkcji przekazuje do `ws2_32`/`mswsock`, a obsługuje sam tylko 9.
+`wsock32.dll` z tego projektu to pośrednik systemowej biblioteki: 66 funkcji przekazuje do `ws2_32`/`mswsock`, a obsługuje sam tylko 7.
 - Każdy gracz Steam dostaje deterministyczny wirtualny adres `10.<24 bity account id>`. Gra traktuje 10.x jako LAN, więc serwery trafiają na listę LAN.
-- `sendto` na wirtualny adres → `ISteamNetworking::SendP2PPacket`.
+- `sendto` na wirtualny adres → `ISteamNetworking::SendP2PPacket` (przebijanie NAT, a gdy się nie da – przekaźniki Steama).
 - Pakiety ze Steama są wstrzykiwane do gniazda gry przez 127.0.0.1, a `recvfrom` podmienia nadawcę na wirtualny adres. Własna pętla `WSAEventSelect` gry działa bez zmian.
 - Broadcasty LAN są przekazywane znajomym w grze i hostom z lobby. Hostowany serwer zakłada lobby Steam.
 - Sesje P2P są przyjmowane przez callback `P2PSessionRequest_t`, pompowany przez własne `SteamAPI_RunCallbacks` gry.
-
-### Poprawki desynców (`[SyncFix]`)
-Nakładane w pamięci tylko w `OwarOGL_SGUI.exe`. Każde miejsce jest lokalizowane sygnaturą bajtową i weryfikowane; przy niezgodności poprawka jest pomijana.
-
-| Opcja | Problem | Poprawka |
-|---|---|---|
-| `RngIsolation` | 21 strumieni `Urandom.rand_*` dzieli globalne `System.RandSeed` (wyścig wątków) | każdy strumień ma własne ziarno; wyniki bit w bit identyczne z oryginałem |
-| `FpuGuard` | obrażenia liczone na x87 i zaokrąglane; słowo sterujące FPU ustawiane tylko raz | `0x133F` przywracane przed każdym `DoGameTick`, korekty logowane |
-| `DrawRngFix` | rysowanie klatek zużywało strumień animacji `rand_mcanim`, który jest w CRC multiplayer | nowe animacje losuje tylko deterministyczny tick |
-| `SelectEventMP` | zaznaczenie jednostki odpalało lokalnie zdarzenie skryptu `ActiveUnitChanged` | w multiplayerze zdarzenie nie jest wywoływane |
-
-Gdy desync mimo to wystąpi, zachowajcie od **wszystkich** graczy pliki `debug\*_SyncLog_*.synclog` i `OWSteamNet.log`.
 
 ## Budowanie
 
@@ -69,18 +71,8 @@ Wynik: `dist\wsock32.dll`.
 
 | Test | Co sprawdza |
 |---|---|
-| `tests/net_selftest` | wzorzec gniazd gry (serwer 27963 + `WSAEventSelect`, klient, broadcast) w trybie `SelfTest=1` bez Steama: rozwiązywanie SteamID, wstrzykiwanie, podmiana nadawcy, broadcast, przezroczystość zwykłego UDP |
-| `tests/steam_api_check` | odczytowe wywołania flat API dołączonego `steam_api.dll` (SDK ~1.32) oraz dispatch obiektu callbacku; wymaga działającego Steama i `steam_appid.txt` = `235320` |
-| `tests/syncfix_test` | mapuje prawdziwy `OwarOGL_SGUI.exe` (bez uruchamiania), wykonuje kod gry przed i po poprawkach, sprawdza identyczność RNG, FPU i haki: `syncfix_test.exe "<folder gry>\OwarOGL_SGUI.exe"` |
-
-## Narzędzia RE (`tools/re`)
-
-- `td32.py` – parser informacji debugowych Borland TD32 (FB09) z `OwarOGL_SGUI_DEBUG.exe`: procedury, zmienne, typy, linie.
-- `exemap.py`, `port.py` – parser nakładki `EXEMAP` i przenoszenie adresów z builda debug na release (moduł + linia).
-- `owdis.py`, `xref.py`, `xrefs.py`, `reach.py` – deasembler z symbolami, odwołania i osiągalność w grafie wywołań.
-- `ghidra_scripts/` – nakładanie symboli TD32 w Ghidrze i dekompilacja per moduł.
-
-Repozytorium nie zawiera żadnych plików ani zdekompilowanego kodu gry; narzędzia działają na Twojej własnej instalacji.
+| `tests/net_selftest` | wzorzec gniazd gry (serwer + `WSAEventSelect`, klient, broadcast) w trybie `SelfTest=1` bez Steama: rozwiązywanie SteamID, wstrzykiwanie, podmiana nadawcy, logowanie odmów dołączenia, broadcast, przezroczystość zwykłego UDP |
+| `tests/steam_api_check` | odczytowe wywołania flat API dołączonego `steam_api.dll` oraz dispatch obiektu callbacku; wymaga działającego Steama i `steam_appid.txt` = `235320` |
 
 ## Licencja
 

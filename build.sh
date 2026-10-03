@@ -10,5 +10,5 @@ export PATH="$(cygpath -u "$VC")/bin/Hostx64/x86:$(cygpath -u "$VC")/bin/Hostx64
 export INCLUDE="$VC/include;$SDK/Include/$SDKV/ucrt;$SDK/Include/$SDKV/um;$SDK/Include/$SDKV/shared"
 export LIB="$VC/lib/x86;$SDK/Lib/$SDKV/ucrt/x86;$SDK/Lib/$SDKV/um/x86"
 mkdir -p build
-cl -nologo -LD -O2 -MT -EHsc -W3 src/owsteamnet.cpp src/syncfix.cpp -Fobuild/ -Fe:dist/wsock32.dll -link -NOLOGO -DEF:src/exports.def -IMPLIB:build/wsock32.lib
+cl -nologo -LD -O2 -MT -EHsc -W3 src/owsteamnet.cpp -Fobuild/ -Fe:dist/wsock32.dll -link -NOLOGO -DEF:src/exports.def -IMPLIB:build/wsock32.lib
 echo "Built dist/wsock32.dll"

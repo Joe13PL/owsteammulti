@@ -34,9 +34,7 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-
-#define OWSTEAMNET_VERSION "0.1.1-pre"
+#define OWSTEAMNET_VERSION "0.2.0"
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
@@ -166,7 +164,7 @@ static int cfg_selfTest = 0;  // loopback test mode: P2P sends are delivered loc
 static CRITICAL_SECTION g_logCs;
 static FILE *g_logf;
 
-void Log(const char *fmt, ...) {
+static void Log(const char *fmt, ...) {
     if (!cfg_log) return;
     EnterCriticalSection(&g_logCs);
     if (!g_logf) {
@@ -922,9 +920,6 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         if (slash) slash[1] = 0;
         LoadConfig();
         Log("OWSteamNet %s loaded (enabled=%d lobby=%d)", OWSTEAMNET_VERSION, cfg_enabled, cfg_lobbyType);
-        char ini[MAX_PATH];
-        sprintf(ini, "%sOWSteamNet.ini", g_dir);
-        SyncFix_Apply(ini);
     }
     return TRUE;
 }

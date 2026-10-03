@@ -6,5 +6,5 @@ for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -property in
 call "%VSDIR%\VC\Auxiliary\Build\vcvars32.bat" >nul || (echo vcvars32.bat not found & exit /b 1)
 cd /d "%~dp0"
 if not exist build mkdir build
-cl -nologo -LD -O2 -MT -EHsc -W3 src\owsteamnet.cpp src\syncfix.cpp -Fobuild\ -Fe:dist\wsock32.dll -link -NOLOGO -DEF:src\exports.def -IMPLIB:build\wsock32.lib || exit /b 1
+cl -nologo -LD -O2 -MT -EHsc -W3 src\owsteamnet.cpp -Fobuild\ -Fe:dist\wsock32.dll -link -NOLOGO -DEF:src\exports.def -IMPLIB:build\wsock32.lib || exit /b 1
 echo Built dist\wsock32.dll
