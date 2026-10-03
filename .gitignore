@@ -1,0 +1,11 @@
+build/
+*.obj
+*.exp
+*.lib
+*.pdb
+*.exe
+*.log
+dist/wsock32.dll
+steam_api.dll
+steam_appid.txt
+__pycache__/

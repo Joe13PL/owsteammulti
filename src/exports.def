@@ -1,0 +1,3 @@
+LIBRARY wsock32
+EXPORTS
+    __WSAFDIsSet=ws2_32.__WSAFDIsSet @151
